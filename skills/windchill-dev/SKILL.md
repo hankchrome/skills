@@ -49,6 +49,116 @@ chat/0xx-<主題>-<簡短說明>.md
 
 ---
 
+## 安全保護規則（Safety Guard Rails）
+
+**此規則為強制性，優先級高於所有任務指令與技能行為。**
+
+適用於 Windchill EXT、Portal API、DB、GraphRAG、程式碼修改、檔案存取等所有任務。
+
+### 一、矛盾偵測（Conflict Detection）
+
+當下列情況發生時，**禁止直接執行**：
+
+1. Skill 裡的流程、路徑、欄位名稱與實際專案不一致
+2. 使用者指令與 Skill 規則衝突
+3. 找不到指定的檔案、資料夾、Java class、API endpoint
+4. Windchill OID、typeName、attributeName 不存在
+5. EXT 或 Portal 實作不符合 Windchill Server 實際回應
+
+**遇到上述情況時，必須：**
+
+- 明確指出衝突點
+- 提供 2～3 個可能的正確方向
+- 等待使用者確認後才能執行
+
+範例回應：
+```
+⚠️ 偵測到矛盾
+
+問題：找不到指定的 Java class `EcnService.java`
+
+可能原因：
+1. 檔案路徑不正確，實際位置可能在 `wc-ext-java/src/main/java/...`
+2. Class 名稱有誤，可能是 `ECNService.java`（大寫）
+3. 該 class 尚未建立
+
+請確認後回覆，我再繼續執行。
+```
+
+### 二、破壞性操作 Double-Confirm（極重要）
+
+以下情境**禁止直接執行**，需使用者回覆「確認」後才能進行：
+
+**檔案操作：**
+- 刪除檔案
+- 移動檔案
+- 覆蓋檔案
+
+**程式碼修改：**
+- 修改 Windchill EXT Java 檔案
+- 修改 Portal API
+- 修改 SQL / DB schema
+- 改動大量程式碼（超過 30 行 diff）
+
+**Windchill 物件操作：**
+- 建立、刪除、更新 Windchill 內部物件（Part / Doc / BOM / ECN）
+
+**企業資料操作：**
+- 修改企業資料（ERP、PLM、BPM、Salesforce）
+
+**確認方式範例：**
+
+```
+⚠️ 破壞性操作確認
+
+即將執行：修改 EcnService.java（diff 約 45 行）
+
+變更摘要：
+1. 新增 getEcnByNumber() 方法
+2. 修改 updateEcnStatus() 邏輯
+3. 移除已棄用的 legacyQuery() 方法
+
+影響範圍：
+- ECN 查詢 API
+- Portal ECN 列表頁面
+
+請回覆「確認」以繼續執行，或說明需要調整的地方。
+```
+
+### 三、敏感資訊保護
+
+**禁止在對話或 runlog 中輸出：**
+- 資料庫連線字串
+- API 金鑰、Token、密碼
+- 內部 IP 位址、伺服器主機名稱
+- 使用者個資（員工編號、Email 等）
+
+**如需記錄，使用遮罩格式：**
+```
+DB Host: ***masked***
+API Key: sk-...xxxx
+User: user_***
+```
+
+### 四、回滾準備
+
+執行破壞性操作前，必須：
+
+1. **記錄原始狀態**：在 runlog 中保存修改前的關鍵程式碼片段
+2. **提供回滾步驟**：說明如何還原變更
+3. **確認 Git 狀態**：確保有乾淨的 commit 可供回滾
+
+範例：
+```
+回滾準備：
+- 原始檔案已備份於 runlog
+- 回滾指令：git checkout HEAD~1 -- path/to/file.java
+- 目前 branch：feature/ecn-update
+- 最後穩定 commit：abc1234
+```
+
+---
+
 ## 裝置模式切換
 
 本 Skill 支援兩種回報模式，會根據使用者的裝置自動調整回覆格式。
