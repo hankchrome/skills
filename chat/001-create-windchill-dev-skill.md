@@ -127,7 +127,7 @@ mkdir -p /home/user/skills/skills/windchill-dev
 | 項目 | 值 |
 |------|-----|
 | Branch | claude/windchill-safety-validation-test-013A6qxkjuGutkVyNCDaTQcH |
-| Commit | （執行後填入） |
+| Commit | e125721 |
 | 變更檔案數 | 2 |
 
 ---
